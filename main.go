@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 type Hero struct {
@@ -32,6 +33,11 @@ type HeroJson struct {
 	Roles    []string `json:"roles"`
 	Portrait string   `json:"portrait"`
 	Icon     string   `json:"icon"`
+}
+
+type PositionJson struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 type DataPick struct {
@@ -65,6 +71,7 @@ func SetupRouter() *gin.Engine {
 	api := r.Group("/api")
 	{
 		api.GET("/heroes", getDataHeroes)
+		api.GET("/positions", getDataPositions)
 		api.Static("/images", "./static")
 		api.POST("/data-pick", sendDataPick)
 	}
@@ -93,6 +100,22 @@ func getDataHeroes(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, heroes)
+}
+
+func getDataPositions(ctx *gin.Context) {
+	data, err := os.ReadFile("./data/positions.json")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load positions data"})
+		return
+	}
+
+	var positions []PositionJson
+	if err = json.Unmarshal(data, &positions); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, positions)
 }
 
 func sendDataPick(ctx *gin.Context) {
@@ -153,7 +176,7 @@ func sendDataPick(ctx *gin.Context) {
 }
 
 func requestPost(dataJson []byte, ctx *gin.Context) {
-	apiUrl := "https://ba68-104-198-31-191.ngrok-free.app/predict"
+	apiUrl := os.Getenv("GOOGLE_COLAB_URL") + "/predict"
 	resp, err := http.Post(apiUrl, "application/json", bytes.NewBuffer(dataJson))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal mengirim data ke API"})
@@ -192,6 +215,10 @@ func requestPost(dataJson []byte, ctx *gin.Context) {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	r := SetupRouter()
 
 	r.Run(":8080")
