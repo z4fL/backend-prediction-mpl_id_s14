@@ -76,13 +76,6 @@ func SetupRouter() *gin.Engine {
 		api.POST("/data-pick", sendDataPick)
 	}
 
-	r.GET("/ping", func(ctx *gin.Context) {
-		response := make(map[string]any)
-
-		response["message"] = "pong"
-		ctx.JSON(http.StatusOK, response)
-	})
-
 	return r
 }
 
@@ -176,7 +169,7 @@ func sendDataPick(ctx *gin.Context) {
 }
 
 func requestPost(dataJson []byte, ctx *gin.Context) {
-	apiUrl := os.Getenv("GOOGLE_COLAB_URL") + "/predict"
+	apiUrl := os.Getenv("FLASK_URL") + "/predict"
 	resp, err := http.Post(apiUrl, "application/json", bytes.NewBuffer(dataJson))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal mengirim data ke API"})
